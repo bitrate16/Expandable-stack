@@ -20,7 +20,7 @@
 type_int old_esp_pointer = 0;
 // Pointer to new stack area
 type_int *new_stack = NULL;
-type_int new_stack_top = NULL;
+type_int new_stack_top = 0;
 // New stack size
 type_int new_stack_size = 0;
 
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
 #endif
 	
 	// Print debug info
-	printf("New ESP: %#011x\n", old_esp_pointer);
+	printf("New ESP: %#011x\n", new_stack_top);
 	
     // Call wrap_main here
 	//  Important note:
