@@ -32,9 +32,9 @@ char** main_argv = NULL;
 // Wrapper for main function should be called on new stack
 void wrap_main(int stack_size, int argc, char** argv);
 
-// Default main
+// Default main ( -O3 will give endless loop )
 // Run with:
-//  mkdir -p bin && g++ --std=c++17 -O3 program.cpp -o bin/program && ./bin/program
+//  mkdir -p bin && g++ --std=c++17 program.cpp -o bin/program && ./bin/program
 // Debug with:
 //  mkdir -p bin && g++ --std=c++17 -w -g program.cpp -o bin/program && valgrind ./bin/program
 // ASM output:
@@ -129,14 +129,18 @@ int main(int argc, char** argv) {
 
 // Counter for recursive calls
 int stack_call_counter = 0;
+type_int *segfault_stack = NULL;
 
 // Handling SIGSEGV to determine stack overflow
 void segfault_sigaction(int signal, siginfo_t *si, void *arg) {
     printf("Caught segfault at address %p\n", si->si_addr);
     printf("Counter value at exit %d\n", stack_call_counter);
 	
-	free(new_stack);
-    exit(0);
+	// free(new_stack);
+	// new_stack = NULL;
+	// free(segfault_stack);
+	// segfault_stack = NULL;
+    exit(1);
 }
 
 // Self-calling recursive function
@@ -166,10 +170,10 @@ void wrap_main(int stack_size, int argc, char** argv) {
 	sigaltstack(&segv_stack, NULL);
 	
 	// Reserve stack for SIGSEGV & set handler
-	static char stack[SEGV_STACK_SIZE];
+	segfault_stack = (type_int*) valloc(SEGV_STACK_SIZE);
     stack_t ss;
 	ss.ss_size = SEGV_STACK_SIZE;
-	ss.ss_sp   = valloc(SEGV_STACK_SIZE);
+	ss.ss_sp   = segfault_stack;
 	
     struct sigaction sa;
 	sa.sa_sigaction = segfault_sigaction;
