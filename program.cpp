@@ -15,6 +15,7 @@
 
 // Pre-defined values (For example - 1Mb)
 #define ALLOCATE_STACK_SIZE 1 * 1024 * 1024
+#define SEGV_STACK_SIZE    16 * 1024
 
 // Old ESP value (For safe restoration)
 type_int old_esp_pointer = 0;
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
 	
 	// Print debug info
 	printf("New ESP: %#011x\n", new_stack_top);
+	printf("Min ESP: %#011x\n", (type_int) new_stack);
 	
     // Call wrap_main here
 	//  Important note:
@@ -156,16 +158,27 @@ void wrap_main(int stack_size, int argc, char** argv) {
 	for (int i = 0; i < argc; ++i)
 		printf("argv[%d] = \"%s\"\n", i, argv[i]);
 	
-	// Set up handler & call recursive
-	// struct sigaction sa;
-	// 
-    // memset(&sa, 0, sizeof(struct sigaction));
-    // sigemptyset(&sa.sa_mask);
-    // sa.sa_sigaction = segfault_sigaction;
-    // sa.sa_flags     = SA_SIGINFO;
-	// 
-    // sigaction(SIGSEGV, &sa, NULL);
-	// 
-	// // Call recursive
-	// recursion();
+	// Reserve stack for SIGSEGV
+	stack_t segv_stack;
+	segv_stack.ss_sp = valloc(SEGV_STACK_SIZE);
+	segv_stack.ss_flags = 0;
+	segv_stack.ss_size = SEGV_STACK_SIZE;
+	sigaltstack(&segv_stack, NULL);
+	
+	// Reserve stack for SIGSEGV & set handler
+	static char stack[SEGV_STACK_SIZE];
+    stack_t ss;
+	ss.ss_size = SEGV_STACK_SIZE;
+	ss.ss_sp   = valloc(SEGV_STACK_SIZE);
+	
+    struct sigaction sa;
+	sa.sa_sigaction = segfault_sigaction;
+	sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+    sigaltstack(&ss, 0);
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, 0);
+	
+	// Call recursive
+	recursion();
 };
