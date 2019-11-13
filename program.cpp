@@ -20,7 +20,7 @@
 type_int old_esp_pointer = 0;
 // Pointer to new stack area
 type_int *new_stack = NULL;
-type_int *new_stack_top = NULL;
+type_int new_stack_top = NULL;
 // New stack size
 type_int new_stack_size = 0;
 
@@ -29,7 +29,7 @@ int main_argc = 0;
 char** main_argv = NULL;
 
 // Wrapper for main function should be called on new stack
-void wrap_main(); // int stack_size, int argc, char** argv);
+void wrap_main(int stack_size, int argc, char** argv);
 
 // Default main
 // Run with:
@@ -53,10 +53,13 @@ int main(int argc, char** argv) {
 	}
 	
 	// Pointer to new stack top
-	new_stack_top = new_stack + new_stack_size;
+	new_stack_top   = (type_int) (uintptr_t) new_stack + new_stack_size;
+	new_stack_size -= new_stack_top & 0xf;
+	// Align stack by 16
+	new_stack_top  &= ~0xf;
 	
 	// Save old ESP value
-	old_esp_pointer = (type_int) (intptr_t) &new_stack_top + sizeof(int);
+	old_esp_pointer = (type_int) (uintptr_t) &new_stack_top + sizeof(int);
 	
 	// Debug Running platform & int sizes
 	printf("Running on ");
@@ -74,7 +77,7 @@ int main(int argc, char** argv) {
 #if defined(__x86_64__)
     __asm__ ( 
           "mov %%rsp, %%rax\n"
-		  "mov %%rbx, %%rsp" 
+		  "mov %%rbx, %%rsp\n"
         : "=a"(old_esp_pointer)
 		: "b"(new_stack_top)
         );
@@ -82,22 +85,21 @@ int main(int argc, char** argv) {
 #if defined(__i386__)
     __asm__ ( 
           "mov %%esp, %%eax\n"
-		  "mov %%ebx, %%esp" 
+		  "mov %%ebx, %%esp\n"
         : "=a"(old_esp_pointer)
 		: "b"(new_stack_top)
         );
 #endif
 	
 	// Print debug info
-	// printf("Stack moved to..\n");
-	// printf("New ESP: %#011x\n", old_esp_pointer);
+	printf("New ESP: %#011x\n", old_esp_pointer);
 	
     // Call wrap_main here
 	//  Important note:
 	//  When program handles signal from outer and 
 	//   need to safety finish it's work, it have to return 
 	//   from wrap_main and dispose new_stack pointer manually
-	// wrap_main();//new_stack_size, main_argc, main_argv); // <-- fails
+	wrap_main(new_stack_size, main_argc, main_argv);
 
     // Restore old SP so we can return to OS
 #if defined(__x86_64__)
@@ -145,18 +147,15 @@ void recursion() {
 //  and trying to count amount of calls.
 // Expectedly, program will throw Segmentation Fault, 
 //  but try to havndle it with SIGSEGV sigaction
-void wrap_main() {//int stack_size, int argc, char** argv) {
+void wrap_main(int stack_size, int argc, char** argv) {
 	// Print stack size
-	// printf("Stack size: %d\n", stack_size);
-	// 
-	// // Print arguments
-	// printf("Arguments:\n");
-	// for (int i = 0; i < argc; ++i)
-	// 	printf("argv[%d] = \"%s\"\n", i, argv[i]);
-	// 
-	// printf("Stack moved to..\n");
-	// printf("New ESP: %#011x\n", old_esp_pointer);
-	// 
+	printf("Stack size: %d\n", stack_size);
+	
+	// Print arguments
+	printf("Arguments:\n");
+	for (int i = 0; i < argc; ++i)
+		printf("argv[%d] = \"%s\"\n", i, argv[i]);
+	
 	// Set up handler & call recursive
 	// struct sigaction sa;
 	// 
