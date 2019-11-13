@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 	//  When program handles signal from outer and 
 	//   need to safety finish it's work, it have to return 
 	//   from wrap_main and dispose new_stack pointer manually
-	// wrap_main();//new_stack_size, main_argc, main_argv);
+	// wrap_main();//new_stack_size, main_argc, main_argv); // <-- fails
 
     // Restore old SP so we can return to OS
 #if defined(__x86_64__)
