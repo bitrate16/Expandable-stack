@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 	new_stack_top  &= ~0xf;
 	
 	// Save old ESP value
-	old_esp_pointer = (type_int) (uintptr_t) &new_stack_top + sizeof(int);
+	old_esp_pointer = (type_int) (uintptr_t) &new_stack_top + sizeof(int); // bug here
 	
 	// Debug Running platform & int sizes
 	printf("Running on ");
