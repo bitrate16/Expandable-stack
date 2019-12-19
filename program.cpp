@@ -7,10 +7,10 @@
 
 // Detect compilation environment
 #if defined(__x86_64__)
-#define type_int uint64_t
+#define uint64_t type_int
 #endif
 #if defined(__i386__)
-#define type_int uint32_t
+#define uint32_t type_int
 #endif
 
 // Pre-defined values (For example - 1Mb)
